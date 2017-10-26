@@ -57,7 +57,7 @@ xlog.Trace("type", "Trace", "Transponder", now, "version", xlog.Version())
 
 ```go
 err := xlog.New(xlog.JSONFormat, xlog.JsonFormatConfig{
-	Writer: os.Stdout,
+    Writer: os.Stdout,
     Level: xlog.TRACE,
     ValuesDefault: []interface{}{"service", "XPTO"},
 })
