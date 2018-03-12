@@ -1,26 +1,36 @@
 package xlog
 
 import (
+	"encoding"
+	"encoding/json"
+	"fmt"
 	"io"
 	"os"
-	"fmt"
-	"encoding/json"
 	"reflect"
-	"encoding"
 )
 
 const JSONFormat MODE = "jsonFormat"
 
+var formatJson = map[LEVEL]string{
+	TRACE: "TRACE",
+	INFO:  "INFO",
+	WARN:  "WARN",
+	ERROR: "ERROR",
+	FATAL: "FATAL",
+}
+
 type jsonFormat struct {
+	LevelText     bool
 	Adapter // needs to compose the adapter
 	writer        io.Writer
 	valuesDefault []interface{}
 }
 
 type JsonFormatConfig struct {
-	Level        LEVEL
-	BufferSize   int64
-	Writer       io.Writer
+	ShowLevelText bool
+	Level         LEVEL
+	BufferSize    int64
+	Writer        io.Writer
 	ValuesDefault []interface{}
 }
 
@@ -44,19 +54,21 @@ func (c *jsonFormat) Init(v interface{}) error {
 	if !ok {
 		return ErrConfigObject{"JsonFormatConfig", v}
 	}
-
+	
 	if cfg.ValuesDefault != nil {
 		c.valuesDefault = cfg.ValuesDefault
 	}
-
+	
 	if cfg.Writer == nil {
 		cfg.Writer = os.Stdout
 	}
-
+	
+	c.LevelText = cfg.ShowLevelText
+	
 	c.writer = cfg.Writer
 	c.level = cfg.Level
 	c.msgChan = make(chan *Message, cfg.BufferSize)
-
+	
 	return nil
 }
 
@@ -75,12 +87,12 @@ LOOP:
 			break LOOP
 		}
 	}
-
+	
 	for {
 		if len(c.msgChan) == 0 {
 			break
 		}
-
+		
 		c.write(<-c.msgChan)
 	}
 	c.quitChan <- struct{}{} // Notify the cleanup is done.
@@ -89,14 +101,19 @@ LOOP:
 func (c *jsonFormat) Destroy() {
 	c.quitChan <- struct{}{}
 	<-c.quitChan
-
+	
 	close(c.msgChan)
 	close(c.quitChan)
 }
 
 func (c *jsonFormat) write(msg *Message) {
-	msg.Body = append(append(c.valuesDefault, "level", msg.Level), msg.Body...)
-
+	var lvl interface{} = msg.Level
+	if !c.LevelText {
+		lvl = formatJson[msg.Level]
+	}
+	
+	msg.Body = append(append(c.valuesDefault, "level", lvl), msg.Body...)
+	
 	n := (len(msg.Body) + 1) / 2 // +1 to handle case when len is odd
 	m := make(map[string]interface{}, n)
 	for i := 0; i < len(msg.Body); i += 2 {
@@ -107,7 +124,7 @@ func (c *jsonFormat) write(msg *Message) {
 		}
 		merge(m, k, v)
 	}
-
+	
 	err := json.NewEncoder(c.writer).Encode(m)
 	if err != nil {
 		c.errorChan <- err
@@ -125,7 +142,7 @@ func merge(dst map[string]interface{}, k, v interface{}) {
 	default:
 		key = fmt.Sprint(x)
 	}
-
+	
 	// We want json.Marshaler and encoding.TextMarshaller to take priority over
 	// err.Error() and v.String(). But json.Marshall (called later) does that by
 	// default so we force a no-op if it's one of those 2 case.
@@ -137,7 +154,7 @@ func merge(dst map[string]interface{}, k, v interface{}) {
 	case fmt.Stringer:
 		v = safeString(x)
 	}
-
+	
 	dst[key] = v
 }
 

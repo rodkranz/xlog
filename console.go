@@ -1,12 +1,12 @@
 package xlog
 
 import (
+	"fmt"
 	"io"
 	"os"
-	"fmt"
 
-	"github.com/go-logfmt/logfmt"
 	"github.com/fatih/color"
+	"github.com/go-logfmt/logfmt"
 )
 
 const CONSOLE MODE = "console"
@@ -20,7 +20,7 @@ var consoleColors = []func(a ...interface{}) string{
 }
 
 type console struct {
-	Adapter // needs to compose the adapter
+	Adapter       // needs to compose the adapter
 	writer        io.Writer
 	valuesDefault []interface{}
 }

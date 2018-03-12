@@ -12,7 +12,7 @@ func Version() string {
 }
 
 type (
-	MODE string
+	MODE  string
 	LEVEL int
 )
 
@@ -44,7 +44,7 @@ type Message struct {
 func writer(level LEVEL, skip int, v ...interface{}) {
 	msg := &Message{
 		Level: level,
-		Body: v,
+		Body:  v,
 	}
 
 	for i := range receivers {

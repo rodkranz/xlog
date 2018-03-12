@@ -17,7 +17,7 @@ func (err ErrInvalidLevel) Error() string {
 	return "input level is not one of: TRACE, INFO, WARN, ERROR or FATAL"
 }
 
-type ErrMissing struct {}
+type ErrMissing struct{}
 
 func (err ErrMissing) Error() string {
 	return "(Missing)"
