@@ -108,7 +108,7 @@ func (c *jsonFormat) Destroy() {
 
 func (c *jsonFormat) write(msg *Message) {
 	var lvl interface{} = msg.Level
-	if !c.LevelText {
+	if c.LevelText {
 		lvl = formatJson[msg.Level]
 	}
 	
