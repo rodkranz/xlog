@@ -3,6 +3,9 @@ package xlog
 import (
 	"fmt"
 	"os"
+	"runtime"
+	"strings"
+	"path/filepath"
 )
 
 const version = "0.0.1"
@@ -12,7 +15,7 @@ func Version() string {
 }
 
 type (
-	MODE  string
+	MODE string
 	LEVEL int
 )
 
@@ -41,11 +44,31 @@ type Message struct {
 	Body  []interface{}
 }
 
-func writer(level LEVEL, skip int, v ...interface{}) {
+func Write(level LEVEL, skip int, v ...interface{}) {
 	msg := &Message{
 		Level: level,
 		Body:  v,
 	}
+
+	if msg.Level >= ERROR && skip > 0 {
+		pc, file, line, ok := runtime.Caller(skip)
+		if ok {
+			// Get caller function name.
+			fn := runtime.FuncForPC(pc)
+			var fnName string
+			if fn == nil {
+				fnName = "?()"
+			} else {
+				fnName = strings.TrimLeft(filepath.Ext(fn.Name()), ".") + "()"
+			}
+
+			if len(file) > 20 {
+				file = "..." + file[len(file)-20:]
+			}
+			msg.Body = append(msg.Body, formats[level] + fmt.Sprintf("[%s:%d %s] ", file, line, fnName) + fmt.Sprint(v...))
+		}
+	}
+
 
 	for i := range receivers {
 		if receivers[i].Level() > level {
@@ -57,23 +80,23 @@ func writer(level LEVEL, skip int, v ...interface{}) {
 }
 
 func Trace(v ...interface{}) {
-	writer(TRACE, 0, v...)
+	Write(TRACE, 0, v...)
 }
 
 func Info(v ...interface{}) {
-	writer(INFO, 0, v...)
+	Write(INFO, 0, v...)
 }
 
 func Warn(v ...interface{}) {
-	writer(WARN, 0, v...)
+	Write(WARN, 0, v...)
 }
 
 func Error(skip int, v ...interface{}) {
-	writer(ERROR, 0, v...)
+	Write(ERROR, skip, v...)
 }
 
 func Fatal(skip int, v ...interface{}) {
-	writer(FATAL, 0, v...)
+	Write(FATAL, skip, v...)
 	Shutdown()
 	os.Exit(1)
 }

@@ -3,10 +3,15 @@ package xlog
 import "fmt"
 
 type Logger interface {
+	// Level returns minimum level of given logger.
 	Level() LEVEL
+	// Init accepts a config struct specific for given logger and performs any necessary initialization.
 	Init(interface{}) error
+	// ExchangeChans accepts error channel, and returns message receive channel.
 	ExchangeChans(chan<- error) chan *Message
+	// Start starts message processing.
 	Start()
+	// Destroy releases all resources.
 	Destroy()
 }
 
