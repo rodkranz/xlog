@@ -27,6 +27,8 @@ const (
 	FATAL
 )
 
+type Fields map[string]interface{}
+
 var formats = map[LEVEL]string{
 	TRACE: "[TRACE] ",
 	INFO:  "[ INFO] ",
@@ -65,10 +67,9 @@ func Write(level LEVEL, skip int, v ...interface{}) {
 			if len(file) > 20 {
 				file = "..." + file[len(file)-20:]
 			}
-			msg.Body = append(msg.Body, formats[level] + fmt.Sprintf("[%s:%d %s] ", file, line, fnName) + fmt.Sprint(v...))
+			msg.Body = append(msg.Body, formats[level]+fmt.Sprintf("[%s:%d %s] ", file, line, fnName)+fmt.Sprint(v...))
 		}
 	}
-
 
 	for i := range receivers {
 		if receivers[i].Level() > level {
